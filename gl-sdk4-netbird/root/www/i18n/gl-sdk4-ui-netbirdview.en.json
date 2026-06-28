@@ -1,0 +1,9 @@
+{
+    "netbird": {
+        "desc": "NetBird creates a secure WireGuard-based overlay network. Use it to connect peers, access your LAN remotely, and route traffic through this router as an exit node.",
+        "status_label": "Status",
+        "peers_label": "Peers",
+        "ip_label": "NetBird IP",
+        "exit_node_label": "Exit Node"
+    }
+}

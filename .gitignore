@@ -1,0 +1,19 @@
+# Secrets
+config/netbird.env.local
+*.key
+*.pem
+
+# Build artifacts
+build/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# macOS
+.DS_Store
+
+# Claude Code session files
+.claude/

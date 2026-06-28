@@ -1,0 +1,10 @@
+config settings
+	option enabled '1'
+	option log_level 'info'
+
+config connection
+	option management_url 'https://your-netbird-server.example.com:443'
+	option disable_client_routes '1'
+	option api_token ''
+	option peer_id ''
+	option route_id ''

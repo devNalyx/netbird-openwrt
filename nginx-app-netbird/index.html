@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetBird</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f6fa;
+  color: #1f2937;
+  padding: 20px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Cards ───────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+/* ── Info card ───────────────────────────────────────── */
+.info-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.info-icon {
+  color: #3b82f6;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.info-text { font-size: 13px; color: #1e40af; }
+.info-text a { color: #1d4ed8; }
+
+/* ── Toggle row ──────────────────────────────────────── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 18px;
+}
+.toggle-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+}
+
+/* CSS toggle switch */
+.switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.switch input { display: none; }
+.switch-track {
+  position: absolute; inset: 0;
+  background: #d1d5db;
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+.switch input:checked ~ .switch-track { background: #10b981; }
+.switch input:checked ~ .switch-track::after { transform: translateX(20px); }
+
+/* ── Form fields ─────────────────────────────────────── */
+.field { margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: monospace;
+  background: #fff;
+  color: #111;
+  transition: border-color .15s;
+}
+.field-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+}
+.field-hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+/* ── Apply button ────────────────────────────────────── */
+.apply-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.btn-apply {
+  padding: 9px 28px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.btn-apply:hover { background: #2563eb; }
+.btn-apply:disabled { opacity: .45; cursor: not-allowed; background: #3b82f6; }
+
+/* ── Status rows ─────────────────────────────────────── */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  gap: 12px;
+}
+.stat-row:last-child { border: none; }
+.stat-label { color: #6b7280; flex-shrink: 0; }
+.stat-val { font-weight: 500; text-align: right; word-break: break-all; }
+
+/* ── Section header ──────────────────────────────────── */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #9ca3af;
+  margin-bottom: 12px;
+}
+
+/* ── Action buttons ──────────────────────────────────── */
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger  { background: #ef4444; color: #fff; }
+.btn-neutral { background: #6b7280; color: #fff; }
+.btn-green   { background: #10b981; color: #fff; }
+.btn-amber   { background: #f59e0b; color: #fff; }
+
+/* ── Peers table ─────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  text-align: left;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #9ca3af;
+  font-weight: 700;
+}
+td { padding: 7px 8px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+tr:last-child td { border: none; }
+.empty-row td { text-align: center; color: #9ca3af; padding: 16px; }
+
+.status-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.dot-connected    { background: #22c55e; }
+.dot-connecting   { background: #f59e0b; }
+.dot-disconnected { background: #ef4444; }
+.dot-idle         { background: #d1d5db; }
+
+/* ── Advanced settings ───────────────────────────────── */
+details summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #6b7280;
+  padding: 2px 0;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+details summary::before { content: '▶'; font-size: 10px; }
+details[open] summary::before { content: '▼'; }
+details[open] summary { color: #111827; font-weight: 600; margin-bottom: 14px; }
+.mini-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.badge-set   { background: #d1fae5; color: #065f46; }
+.badge-unset { background: #fee2e2; color: #991b1b; }
+
+/* ── Log ─────────────────────────────────────────────── */
+pre#nb-log {
+  background: #111827;
+  color: #d1d5db;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 12px;
+}
+
+/* ── Toast ───────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.info  { background: #1e40af; color: #fff; }
+#toast.ok    { background: #065f46; color: #fff; }
+#toast.error { background: #991b1b; color: #fff; }
+
+/* ── Status badge next to title ─────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.status-badge.running    { background: #d1fae5; color: #065f46; }
+.status-badge.stopped    { background: #f3f4f6; color: #6b7280; }
+.status-badge.connecting { background: #fef3c7; color: #92400e; }
+
+hr.sep { border: none; border-top: 1px solid #f3f4f6; margin: 14px 0; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ── Title ──────────────────────────────────────────── -->
+<div class="page-title">
+  NetBird
+  <span id="status-badge" class="status-badge stopped">● Stopped</span>
+</div>
+
+<!-- ── Info card ─────────────────────────────────────── -->
+<div class="info-card">
+  <span class="info-icon">ℹ</span>
+  <div class="info-text">
+    NetBird builds a secure WireGuard-based overlay network connecting all your
+    devices — managed by your self-hosted NetBird server.
+    When enabled as an exit node, other peers route internet traffic through this router.
+  </div>
+</div>
+
+<!-- ── Main config card ──────────────────────────────── -->
+<div class="card">
+
+  <!-- Toggle row -->
+  <div class="toggle-row">
+    <span class="toggle-label">Enable NetBird</span>
+    <label class="switch">
+      <input type="checkbox" id="enable-toggle">
+      <span class="switch-track"></span>
+    </label>
+  </div>
+
+  <!-- Config fields (shown when toggle is ON) -->
+  <div id="config-fields">
+    <div class="field">
+      <label class="field-label" for="setup-url">Management Server URL</label>
+      <input id="setup-url" class="field-input" type="url"
+             value="https://your-netbird-server.example.com:443"
+             placeholder="https://your-netbird-server">
+    </div>
+    <div class="field">
+      <label class="field-label" for="setup-key">
+        Setup Key
+        <span style="font-weight:400;color:#9ca3af;font-size:12px">
+          — dashboard → Setup Keys → Reusable
+        </span>
+      </label>
+      <input id="setup-key" class="field-input" type="text"
+             placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+             autocomplete="off" spellcheck="false">
+      <div class="field-hint">Leave blank to reconnect using an existing enrollment.</div>
+    </div>
+  </div>
+
+  <div class="apply-row">
+    <button id="btn-apply" class="btn-apply" onclick="applyConfig()">Apply</button>
+  </div>
+</div>
+
+<!-- ── Connection status (shown when running) ─────────── -->
+<div id="status-card" class="card" hidden>
+  <div class="section-title">Connection</div>
+  <div class="stat-row"><span class="stat-label">NetBird IP</span> <span id="nb-ip"   class="stat-val">—</span></div>
+  <div class="stat-row"><span class="stat-label">FQDN</span>       <span id="nb-fqdn" class="stat-val">—</span></div>
+  <div class="stat-row"><span class="stat-label">Management</span> <span id="nb-mgmt" class="stat-val">—</span></div>
+  <div class="stat-row"><span class="stat-label">Server</span>     <span id="nb-url"  class="stat-val">—</span></div>
+  <div class="stat-row"><span class="stat-label">Peers</span>      <span id="nb-peers" class="stat-val">—</span></div>
+  <div class="stat-row"><span class="stat-label">Exit node</span>  <span id="nb-nets"  class="stat-val">—</span></div>
+  <div class="btn-row">
+    <button id="btn-exit" class="btn btn-green" onclick="act('toggle_exit')" hidden>Enable Exit Node</button>
+    <button class="btn btn-neutral" onclick="act('restart')">Restart Daemon</button>
+  </div>
+</div>
+
+<!-- ── Peers (shown when running) ────────────────────── -->
+<div id="peers-card" class="card" hidden>
+  <div class="section-title">Peers</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Peer</th>
+        <th>IP</th>
+        <th>Status</th>
+        <th>Type</th>
+        <th>Latency</th>
+      </tr>
+    </thead>
+    <tbody id="peers-tbody">
+      <tr class="empty-row"><td colspan="5">No peers</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Advanced ──────────────────────────────────────── -->
+<div class="card">
+  <details>
+    <summary>
+      Advanced Settings
+    </summary>
+    <div class="field">
+      <label class="field-label">
+        API Token
+        <span id="token-badge" class="mini-badge badge-unset">NOT SET</span>
+      </label>
+      <input id="token-input" class="field-input" type="password"
+             placeholder="NetBird dashboard → avatar → API Tokens">
+      <div class="field-hint">
+        Required for the Exit Node toggle. Leave blank to keep the current value.
+      </div>
+    </div>
+    <button class="btn btn-neutral" onclick="saveToken()" style="font-size:13px">Save Token</button>
+
+    <hr class="sep">
+
+    <div class="field-hint" style="margin-top:0">
+      Log tail
+    </div>
+    <pre id="nb-log">(connecting to API…)</pre>
+  </details>
+</div>
+
+<script>
+(function () {
+  var API      = '/netbird/api';
+  var timer    = null;
+  var fastUntil = 0;
+  var apiBusy  = false;
+  var apiOk    = false; // becomes true once first successful response
+
+  /* ── Polling ──────────────────────────────────────── */
+  function tick() {
+    fetchStatus().then(scheduleNext);
+  }
+
+  function scheduleNext() {
+    clearTimeout(timer);
+    timer = setTimeout(tick, Date.now() < fastUntil ? 1500 : 5000);
+  }
+
+  function fetchStatus() {
+    return fetch(API, { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        apiOk = true;
+        updateDOM(data);
+      })
+      .catch(function () {
+        if (!apiOk) {
+          /* First-time failure: show config fields so user can still act */
+          document.getElementById('status-badge').className = 'status-badge stopped';
+          document.getElementById('status-badge').textContent = '● API unreachable';
+          document.getElementById('config-fields').style.display = '';
+        }
+      });
+  }
+
+  /* ── DOM update ───────────────────────────────────── */
+  function updateDOM(data) {
+    var running   = data.daemon === 'running';
+    var connected = running &&
+                    data.mgmt_status &&
+                    data.mgmt_status.indexOf('Connected') === 0;
+
+    /* Status badge */
+    var badge = document.getElementById('status-badge');
+    if (connected) {
+      badge.className = 'status-badge running';
+      badge.textContent = '● Connected';
+    } else if (running) {
+      badge.className = 'status-badge connecting';
+      badge.textContent = '● Connecting…';
+    } else {
+      badge.className = 'status-badge stopped';
+      badge.textContent = '● Stopped';
+    }
+
+    /* Toggle reflects actual daemon state.
+       Never auto-hide config fields here — visibility is controlled only by the
+       user-initiated toggle change event, so the form stays accessible when stopped. */
+    var toggle = document.getElementById('enable-toggle');
+    var prevChecked = toggle.checked;
+    toggle.checked = running;
+    if (running && !prevChecked) syncConfigVisibility(true); /* show when daemon starts */
+
+    /* Pre-fill URL from API (only if user hasn't modified it) */
+    if (data.mgmt_url) {
+      var urlEl = document.getElementById('setup-url');
+      if (!urlEl.dataset.touched) urlEl.value = data.mgmt_url;
+    }
+
+    /* Show/hide status card */
+    document.getElementById('status-card').hidden = !running;
+    document.getElementById('peers-card').hidden  = !running;
+
+    /* Status rows */
+    setText('nb-ip',    data.nb_ip);
+    setText('nb-fqdn',  data.fqdn);
+    setText('nb-url',   data.mgmt_url);
+    setText('nb-peers', data.peers_count);
+    setText('nb-nets',  data.networks);
+
+    /* Management — truncate long gRPC errors */
+    var mgmt   = data.mgmt_status || 'Disconnected';
+    var mgmtEl = document.getElementById('nb-mgmt');
+    if (mgmt.length > 50) {
+      mgmtEl.textContent = mgmt.indexOf('Connected') === 0 ? 'Connected' : 'Disconnected';
+      mgmtEl.title = mgmt;
+    } else {
+      mgmtEl.textContent = mgmt;
+      mgmtEl.title = '';
+    }
+
+    /* Exit button */
+    var exitBtn = document.getElementById('btn-exit');
+    var showExit = data.token_set && data.route_id_set;
+    exitBtn.hidden = !showExit;
+    if (showExit) {
+      exitBtn.textContent = data.exit_active ? 'Disable Exit Node' : 'Enable Exit Node';
+      exitBtn.className   = 'btn ' + (data.exit_active ? 'btn-amber' : 'btn-green');
+    }
+
+    /* Token badge */
+    var tb = document.getElementById('token-badge');
+    tb.textContent = data.token_set ? 'SET' : 'NOT SET';
+    tb.className   = 'mini-badge ' + (data.token_set ? 'badge-set' : 'badge-unset');
+
+    /* Peers table */
+    var tbody = document.getElementById('peers-tbody');
+    tbody.innerHTML = '';
+    var peers = data.peers || [];
+    if (peers.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No peers yet</td></tr>';
+    } else {
+      peers.forEach(function (p) {
+        var st  = (p.status || '').toLowerCase();
+        var dot = '<span class="status-dot dot-' + (st || 'idle') + '"></span>';
+        var name = (p.name || '').replace('.netbird.selfhosted', '');
+        var row = '<tr>' +
+          '<td title="' + (p.name || '') + '">' + name + '</td>' +
+          '<td>' + (p.ip || '') + '</td>' +
+          '<td>' + dot + (p.status || '') + '</td>' +
+          '<td>' + (p.conn_type || p.type || '—') + '</td>' +
+          '<td>' + (p.latency || '—') + '</td>' +
+          '</tr>';
+        tbody.innerHTML += row;
+      });
+    }
+
+    /* Log */
+    var logEl = document.getElementById('nb-log');
+    var atBottom = logEl.scrollHeight - logEl.scrollTop <= logEl.clientHeight + 5;
+    logEl.textContent = data.log_tail || '(no log)';
+    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+
+    /* Exit fast-poll once connected */
+    if (fastUntil > 0 && connected) fastUntil = 0;
+  }
+
+  /* ── Config visibility ────────────────────────────── */
+  function syncConfigVisibility(show) {
+    document.getElementById('config-fields').style.display = show ? '' : 'none';
+  }
+
+  /* Listen to toggle change */
+  document.getElementById('enable-toggle').addEventListener('change', function () {
+    syncConfigVisibility(this.checked);
+  });
+
+  /* Mark URL field as user-touched to prevent API from overwriting it */
+  document.getElementById('setup-url').addEventListener('input', function () {
+    this.dataset.touched = '1';
+  });
+
+  /* ── Apply ────────────────────────────────────────── */
+  window.applyConfig = function () {
+    var toggle = document.getElementById('enable-toggle');
+    if (!toggle.checked) {
+      act('disconnect');
+      return;
+    }
+    var url = document.getElementById('setup-url').value.trim();
+    var key = document.getElementById('setup-key').value.trim();
+    if (!url) { showToast('Enter a management URL first', 'error'); return; }
+    act('quick_setup', { mgmt_url: url, setup_key: key });
+    document.getElementById('setup-key').value = '';
+  };
+
+  /* ── Actions ──────────────────────────────────────── */
+  function act(action, params) {
+    if (apiBusy) return;
+    apiBusy = true;
+    setAllDisabled(true);
+
+    var body = 'action=' + encodeURIComponent(action);
+    if (params) {
+      Object.keys(params).forEach(function (k) {
+        body += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k] || '');
+      });
+    }
+
+    var labels = {
+      quick_setup:  'Connecting…',
+      connect:      'Connecting…',
+      disconnect:   'Stopping…',
+      restart:      'Restarting…',
+      toggle_exit:  'Toggling exit node…',
+      save_token:   'Token saved'
+    };
+    showToast(labels[action] || 'Working…', action === 'save_token' ? 'ok' : 'info');
+
+    fetch(API, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    body
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { if (!d.ok) showToast(d.error || 'Action failed', 'error'); })
+    .catch(function () { showToast('Request failed', 'error'); })
+    .then(function () {
+      apiBusy = false;
+      setAllDisabled(false);
+      if (action !== 'save_token') fastUntil = Date.now() + 30000;
+      clearTimeout(timer);
+      tick();
+    });
+  }
+  window.act = act;
+
+  /* ── Token save ───────────────────────────────────── */
+  window.saveToken = function () {
+    var t = document.getElementById('token-input').value.trim();
+    act('save_token', { api_token: t || 'KEEP' });
+    document.getElementById('token-input').value = '';
+  };
+
+  /* ── Helpers ──────────────────────────────────────── */
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val || '—';
+  }
+
+  function setAllDisabled(state) {
+    var els = document.querySelectorAll('button, input');
+    for (var i = 0; i < els.length; i++) els[i].disabled = state;
+  }
+
+  var toastTimer = null;
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show ' + (type || 'info');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = ''; }, 4000);
+  }
+
+  /* ── Start ────────────────────────────────────────── */
+  /* Config fields visible by default so user can act immediately */
+  syncConfigVisibility(true);
+  tick();
+})();
+</script>
+</body>
+</html>
