@@ -13,6 +13,7 @@ A self-contained plugin that runs NetBird as a proper OpenWrt service on GL.iNet
 - **procd-managed daemon** — auto-starts at boot (`START=90`), auto-respawns on crash; no rc.local hacks
 - **Persistent config** — enrollment and WireGuard keys stored in `/etc/netbird/` (overlay FS); survives reboots since OpenWrt's `/var` is tmpfs
 - **ZeroTier-style web UI** — status card, peers table with connection type, one-click connect/disconnect/restart, setup key enrollment — embedded in the GL.iNet admin panel at `#/netbirdview`
+- **At-a-glance daemon health** — status card shows the running daemon version plus a MANAGED/DETACHED badge for whether procd is currently supervising it (auto-restart on crash) vs. it was started directly by a Restart/Connect action — no SSH needed to check
 - **Exit node** — router advertises `0.0.0.0/0` to peers; watchdog maintains `iptables`/`ipset` forwarding rules across all authorized peer sets
 - **Stability watchdog** — cron every 5 min: TCP keepalive tuning (prevents CGNAT gRPC stream drops), management reconnect on disconnect, log rotation
 - **UCI configuration** — all settings in `/etc/config/netbird`, readable by standard OpenWrt tools

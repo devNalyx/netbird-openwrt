@@ -350,6 +350,13 @@ hr.sep { border: none; border-top: 1px solid #f3f4f6; margin: 14px 0; }
   <div class="section-title">Connection</div>
   <div class="stat-row"><span class="stat-label">NetBird IP</span> <span id="nb-ip"   class="stat-val">—</span></div>
   <div class="stat-row"><span class="stat-label">FQDN</span>       <span id="nb-fqdn" class="stat-val">—</span></div>
+  <div class="stat-row">
+    <span class="stat-label">Version</span>
+    <span class="stat-val" style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+      <span id="nb-ver">—</span>
+      <span id="procd-badge" class="mini-badge badge-set" title="Managed: procd supervises the daemon and auto-restarts it on crash. Detached: started directly (e.g. by Restart/Connect) — still works fine, but won't auto-recover if it crashes until the next reboot or manual '/etc/init.d/netbird restart'.">MANAGED</span>
+    </span>
+  </div>
   <div class="stat-row"><span class="stat-label">Management</span> <span id="nb-mgmt" class="stat-val">—</span></div>
   <div class="stat-row"><span class="stat-label">Server</span>     <span id="nb-url"  class="stat-val">—</span></div>
   <div class="stat-row"><span class="stat-label">Peers</span>      <span id="nb-peers" class="stat-val">—</span></div>
@@ -486,9 +493,15 @@ hr.sep { border: none; border-top: 1px solid #f3f4f6; margin: 14px 0; }
     /* Status rows */
     setText('nb-ip',    data.nb_ip);
     setText('nb-fqdn',  data.fqdn);
+    setText('nb-ver',   data.version);
     setText('nb-url',   data.mgmt_url);
     setText('nb-peers', data.peers_count);
     setText('nb-nets',  data.networks);
+
+    /* procd-managed badge */
+    var pb = document.getElementById('procd-badge');
+    pb.textContent = data.procd_managed ? 'MANAGED' : 'DETACHED';
+    pb.className   = 'mini-badge ' + (data.procd_managed ? 'badge-set' : 'badge-unset');
 
     /* Management — truncate long gRPC errors */
     var mgmt   = data.mgmt_status || 'Disconnected';

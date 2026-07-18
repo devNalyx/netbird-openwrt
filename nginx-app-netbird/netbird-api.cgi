@@ -206,6 +206,7 @@ NB_IP=$(echo "$STATUS_RAW"     | grep '^NetBird IP:'   | head -1 | awk '{print $
 FQDN=$(echo "$STATUS_RAW"      | grep '^FQDN:'         | head -1 | awk '{print $2}')
 MGMT_S=$(echo "$STATUS_RAW"    | grep '^Management:'   | head -1 | cut -d: -f2- | xargs)
 PEERS_CNT=$(echo "$STATUS_RAW" | grep '^Peers count:'  | head -1 | awk '{print $3}')
+DAEMON_VER=$(echo "$STATUS_RAW" | grep '^Daemon version:' | head -1 | awk '{print $3}')
 # Anchor to line start and take only the first match to prevent multi-line values
 NETWORKS=$(echo "$STATUS_RAW"  | grep '^Networks:'     | head -1 | awk '{$1=""; sub(/^ /,""); print}' | tr -cd '\40-\176')
 
@@ -214,6 +215,15 @@ echo "$STATUS_RAW" | grep -q '0\.0\.0\.0/0' && EXIT_ACTIVE=true
 TOKEN_SET=false;  [ -n "$API_TOKEN" ] && TOKEN_SET=true
 ROUTE_SET=false;  [ -n "$ROUTE_ID" ]  && ROUTE_SET=true
 
+# Whether the running daemon is actually the one procd thinks it's supervising.
+# A restart/connect action starts netbird directly (bypassing procd) so its
+# respawn-on-crash protection can go stale after a manual restart — harmless
+# to the connection itself, but worth surfacing since it's easy to miss
+# without SSHing in (see README Troubleshooting).
+PROCD_JSON=$(timeout 5 ubus call service list '{"name":"netbird"}' 2>/dev/null)
+PROCD_MANAGED=false
+echo "$PROCD_JSON" | grep -q '"running":[[:space:]]*true' && PROCD_MANAGED=true
+
 # Escape ALL string fields through json_str — strips control chars + escapes JSON specials
 MGMT_ESC=$(json_str "$MGMT_S")
 URL_ESC=$(json_str "$MGMT_URL")
@@ -221,6 +231,7 @@ FQDN_ESC=$(json_str "$FQDN")
 NB_IP_ESC=$(json_str "$NB_IP")
 NET_ESC=$(json_str "${NETWORKS:---}")
 CNT_ESC=$(json_str "${PEERS_CNT:-0/0}")
+VER_ESC=$(json_str "${DAEMON_VER:---}")
 
 # Log tail: strip ALL control chars (incl. ESC/ANSI sequences) before escaping.
 # Raw control chars in JSON strings are invalid and break browser JSON.parse().
@@ -264,5 +275,6 @@ printf '{"daemon":"%s","nb_ip":"%s","fqdn":"%s","mgmt_url":"%s","mgmt_status":"%
 printf '"peers_count":"%s","exit_active":%s,"networks":"%s",' \
     "$CNT_ESC" "$EXIT_ACTIVE" "$NET_ESC"
 printf '"token_set":%s,"route_id_set":%s,' "$TOKEN_SET" "$ROUTE_SET"
+printf '"version":"%s","procd_managed":%s,' "$VER_ESC" "$PROCD_MANAGED"
 printf '"log_tail":"%s",' "$LOG_ESC"
 printf '"peers":%s}' "$PEERS_JSON"
