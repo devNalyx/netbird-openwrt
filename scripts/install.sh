@@ -1,6 +1,6 @@
 #!/bin/sh
 # Install NetBird on GL-MT3000 (aarch64_cortex-a53, OpenWRT/GL.iNet firmware)
-# Tested on: OpenWRT 21.02-SNAPSHOT, GL.iNet GL-MT3000 v4.8.1, netbird v0.73.2
+# Tested on: OpenWRT 21.02-SNAPSHOT, GL.iNet GL-MT3000 v4.8.1, netbird v0.74.7
 #
 # GL.iNet custom feeds do NOT include community packages — opkg won't find netbird.
 # Downloads the static arm64 binary directly from GitHub releases.
@@ -12,7 +12,7 @@
 
 set -e
 
-NETBIRD_VERSION="0.73.2"
+NETBIRD_VERSION="0.74.7"
 MGMT_URL="${1:-https://your-netbird-server.example.com:443}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
