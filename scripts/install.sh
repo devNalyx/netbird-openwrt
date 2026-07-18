@@ -67,7 +67,9 @@ start_service() {
     [ "$enabled" -eq 1 ] || return
     local mgmt_url; config_get mgmt_url connection management_url "MGMT_PLACEHOLDER"
     local log_level; config_get log_level settings log_level "info"
-    pkill -x netbird 2>/dev/null; sleep 1
+    # No `pkill` applet on GL.iNet's BusyBox — it silently no-ops instead of
+    # failing (killall/pgrep are present; use those instead everywhere here).
+    killall -q netbird 2>/dev/null; sleep 1
     rm -f /var/run/netbird.sock
     mkdir -p /var/lib/netbird /var/log/netbird
     procd_open_instance
@@ -87,7 +89,7 @@ start_service() {
 
 stop_service() {
     /usr/bin/netbird down >/dev/null 2>&1 || true
-    pkill -x netbird 2>/dev/null || true
+    killall -q netbird 2>/dev/null || true
     rm -f /var/run/netbird.sock
 }
 INITEOF
@@ -134,7 +136,7 @@ if ! grep -q 'netbird service run' /etc/rc.local 2>/dev/null; then
 \
 # ── NetBird ──────────────────────────────────────────────────────────────────\
 mkdir -p /var/log/netbird /var/lib/netbird\
-pkill -x netbird 2>/dev/null; sleep 1\
+killall -q netbird 2>/dev/null; sleep 1\
 rm -f /var/run/netbird.sock\
 /usr/bin/netbird service run --log-file /var/log/netbird/client.log --log-level info \&\
 i=0; while [ ! -S /var/run/netbird.sock ] \&\& [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done\
@@ -154,7 +156,7 @@ echo " 1. Deploy the watchdog (from openWrtBird/ directory):"
 echo "    sh nginx-app-netbird/deploy.sh"
 echo ""
 echo " 2. Start the daemon now (no reboot needed):"
-echo "    pkill -x netbird 2>/dev/null; sleep 1"
+echo "    killall -q netbird 2>/dev/null; sleep 1"
 echo "    netbird service run --log-file /var/log/netbird/client.log &"
 echo "    netbird up --management-url ${MGMT_URL} --setup-key YOUR_KEY --disable-client-routes"
 echo ""

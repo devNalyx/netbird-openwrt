@@ -25,6 +25,20 @@ sysctl -qw net.ipv4.tcp_keepalive_time=60   2>/dev/null || true
 sysctl -qw net.ipv4.tcp_keepalive_intvl=10  2>/dev/null || true
 sysctl -qw net.ipv4.tcp_keepalive_probes=3  2>/dev/null || true
 
+# ── Self-heal: duplicate daemon ────────────────────────────────────────────────
+# Two `netbird service run` processes can end up racing for wt0 and the
+# NETBIRD-* iptables chains (see README Troubleshooting: "Chain already
+# exists") if two restart/connect requests ever overlap. Left alone this leaks
+# memory and blocks all peer connections indefinitely. Since this cron runs
+# every 5 min, it's a bounded time-to-heal instead of a silent slow leak.
+NB_COUNT=$(pgrep -x netbird 2>/dev/null | wc -l)
+if [ "$NB_COUNT" -gt 1 ]; then
+    logger -t netbird-watchdog "duplicate daemon detected ($NB_COUNT processes) — cleaning up" 2>/dev/null
+    sh /usr/libexec/netbird-cleanup.sh >/dev/null 2>&1
+    /etc/init.d/netbird restart >/dev/null 2>&1
+    sleep 10
+fi
+
 # ── If daemon is not running, let procd restart it ────────────────────────────
 # Procd handles respawn automatically. Only kick it if procd didn't catch it.
 if [ ! -S "$SOCK" ]; then

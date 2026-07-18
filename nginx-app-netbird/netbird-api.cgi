@@ -38,8 +38,7 @@ update_hosts() {
 
 ensure_daemon() {
     [ -S /var/run/netbird.sock ] && return
-    pkill -x netbird 2>/dev/null
-    sleep 1
+    wait_for_death 10
     rm -f /var/run/netbird.sock
     mkdir -p /var/log/netbird /var/lib/netbird
     /usr/bin/netbird service run --log-file "$LOG" --log-level info &
@@ -47,6 +46,25 @@ ensure_daemon() {
     while [ ! -S /var/run/netbird.sock ] && [ $i -lt 15 ]; do
         sleep 1; i=$((i+1))
     done
+}
+
+# Wait up to $1 seconds for all `netbird` processes to actually exit (it can be
+# slow to exit or ignore the signal mid-shutdown) before starting a new one.
+# A fixed sleep here is what let two daemons run at once and race for wt0 /
+# the NETBIRD-* iptables chains — see README Troubleshooting: "Chain already exists".
+#
+# NOTE: this box's BusyBox has no `pkill` applet at all — `pkill -x netbird`
+# silently no-ops (command not found, swallowed by 2>/dev/null) instead of
+# failing loudly, which is what let a killed-in-name-only daemon keep running
+# alongside a freshly-started one. `pgrep` and `killall` ARE present; use those.
+wait_for_death() {
+    local max="${1:-10}" i=0
+    killall -q netbird 2>/dev/null
+    while pgrep -x netbird >/dev/null 2>&1 && [ "$i" -lt "$max" ]; do
+        sleep 1; i=$((i+1))
+    done
+    killall -q -9 netbird 2>/dev/null
+    true
 }
 
 json_ok()  { printf 'Content-Type: application/json\r\n\r\n{"ok":true,"action":"%s"}' "$1"; exit 0; }
@@ -74,7 +92,10 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     if ! lock_acquire; then
         json_err "busy"
     fi
-    trap 'rm -rf "$LOCK"' EXIT
+    # No trap here: backgrounded actions below hold the lock themselves (via a
+    # trap inside their subshell + overwriting $LOCK/pid with the subshell's
+    # own PID) so a second click can't overlap a teardown/restart still in
+    # flight. Synchronous branches release the lock explicitly before exit.
     read -r -n "${CONTENT_LENGTH:-0}" POST_DATA
     ACTION=$(get_field "action" "$POST_DATA")
 
@@ -89,6 +110,7 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 uci commit netbird
             }
             (
+                trap 'rm -rf "$LOCK"' EXIT
                 update_hosts "$MGMT_URL"
                 ensure_daemon
                 /usr/bin/netbird down >/dev/null 2>&1 || true
@@ -105,27 +127,31 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 fi
                 [ -n "$API_TOKEN" ] && ( sleep 20; /usr/libexec/netbird-setup-api.sh ) &
             ) &
+            echo $! > "$LOCK/pid"
             json_ok "quick_setup"
             ;;
 
         connect)
             (
+                trap 'rm -rf "$LOCK"' EXIT
                 ensure_daemon
                 /usr/bin/netbird up --management-url "$MGMT_URL" \
                     --disable-client-routes >/dev/null 2>&1
             ) &
+            echo $! > "$LOCK/pid"
             json_ok "connect"
             ;;
 
         disconnect)
             /usr/bin/netbird down >/dev/null 2>&1
+            rm -rf "$LOCK"
             json_ok "disconnect"
             ;;
 
         restart)
             (
-                pkill -x netbird 2>/dev/null; sleep 3
-                kill -9 "$(pgrep netbird 2>/dev/null)" 2>/dev/null; sleep 1
+                trap 'rm -rf "$LOCK"' EXIT
+                wait_for_death 10
                 rm -f /var/run/netbird.sock
                 mkdir -p /var/log/netbird /var/lib/netbird
                 /usr/bin/netbird service run \
@@ -136,26 +162,35 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
                 /usr/bin/netbird up \
                     --management-url "$MGMT_URL" --disable-client-routes >/dev/null 2>&1
             ) &
+            echo $! > "$LOCK/pid"
             json_ok "restart"
             ;;
 
         toggle_exit)
-            [ -n "$API_TOKEN" ] && [ -n "$ROUTE_ID" ] && \
-                /usr/libexec/netbird-toggle-exit.sh >/dev/null 2>&1 &
+            (
+                trap 'rm -rf "$LOCK"' EXIT
+                [ -n "$API_TOKEN" ] && [ -n "$ROUTE_ID" ] && \
+                    /usr/libexec/netbird-toggle-exit.sh >/dev/null 2>&1
+            ) &
+            echo $! > "$LOCK/pid"
             json_ok "toggle_exit"
             ;;
 
         save_token)
             NEW_TOKEN=$(urldecode "$(get_field "api_token" "$POST_DATA")")
-            [ -n "$NEW_TOKEN" ] && [ "$NEW_TOKEN" != "KEEP" ] && {
+            if [ -n "$NEW_TOKEN" ] && [ "$NEW_TOKEN" != "KEEP" ]; then
                 uci set "netbird.@connection[0].api_token=$NEW_TOKEN"
                 uci commit netbird
-                ( sleep 3; /usr/libexec/netbird-setup-api.sh ) &
-            }
+                ( trap 'rm -rf "$LOCK"' EXIT; sleep 3; /usr/libexec/netbird-setup-api.sh ) &
+                echo $! > "$LOCK/pid"
+            else
+                rm -rf "$LOCK"
+            fi
             json_ok "save_token"
             ;;
 
         *)
+            rm -rf "$LOCK"
             json_err "unknown action"
             ;;
     esac

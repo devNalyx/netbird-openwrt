@@ -23,7 +23,10 @@ start_service() {
 
     # Kill any stale daemon before procd registers its new PID.
     # Without this, a leftover process from a previous crash holds wt0/iptables.
-    pkill -x netbird 2>/dev/null; sleep 1
+    # NOTE: no `pkill` applet on this BusyBox build — it silently no-ops rather
+    # than failing, which is exactly what let a "killed" stale daemon keep
+    # running alongside the new procd-managed one. pgrep/killall are present.
+    killall -q netbird 2>/dev/null; sleep 1
     rm -f /var/run/netbird.sock
 
     procd_open_instance
@@ -53,6 +56,6 @@ start_service() {
 
 stop_service() {
     /usr/bin/netbird down >/dev/null 2>&1 || true
-    pkill -x netbird 2>/dev/null || true
+    killall -q netbird 2>/dev/null || true
     rm -f /var/run/netbird.sock
 }

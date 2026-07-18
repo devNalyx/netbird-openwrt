@@ -16,9 +16,11 @@ MGMT_URL="https://your-netbird-server.example.com:443"
 LOG="/var/log/netbird/client.log"
 
 # Kill any stale instances first
+# NOTE: no `pkill` applet on this BusyBox — it silently no-ops instead of
+# failing. Use killall (present alongside pgrep) so this actually kills them.
 if pgrep -x netbird >/dev/null 2>&1; then
     echo ">> Stopping existing netbird processes..."
-    pkill -x netbird 2>/dev/null
+    killall -q netbird 2>/dev/null
     sleep 2
 fi
 

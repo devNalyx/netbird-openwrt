@@ -3,9 +3,12 @@
 # Kills all netbird processes and removes ALL iptables chains across all tables.
 
 echo "Stopping NetBird..."
-pkill -x netbird 2>/dev/null
+# NOTE: this platform's BusyBox has no `pkill` applet — it silently no-ops
+# instead of failing, which let a "killed" daemon keep running. Use
+# pgrep/killall (both present) instead of pkill everywhere in this repo.
+killall -q netbird 2>/dev/null
 sleep 3
-kill -9 $(pgrep netbird 2>/dev/null) 2>/dev/null
+killall -q -9 netbird 2>/dev/null
 sleep 2
 
 echo "Cleaning iptables..."

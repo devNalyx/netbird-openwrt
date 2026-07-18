@@ -25,6 +25,7 @@ push "$DIR/netbird-setup-api.sh"   /usr/libexec/netbird-setup-api.sh
 
 # ── Watchdog ──────────────────────────────────────────────────────────────────
 push "$ROOT/scripts/netbird-watchdog.sh" /usr/libexec/netbird-watchdog.sh
+push "$ROOT/scripts/netbird-cleanup.sh"  /usr/libexec/netbird-cleanup.sh
 
 # ── Init.d script (procd — proper OpenWrt service) ────────────────────────────
 push "$ROOT/gl-sdk4-netbird/root/etc/init.d/netbird" /etc/init.d/netbird
@@ -34,6 +35,7 @@ ssh "$ROUTER" "
               /usr/libexec/netbird-toggle-exit.sh \
               /usr/libexec/netbird-setup-api.sh \
               /usr/libexec/netbird-watchdog.sh \
+              /usr/libexec/netbird-cleanup.sh \
               /etc/init.d/netbird
 
     # ── Config persistence ─────────────────────────────────────────────────────

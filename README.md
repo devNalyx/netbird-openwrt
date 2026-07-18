@@ -221,6 +221,10 @@ netbird service run --log-file /var/log/netbird/client.log --log-level info &
 netbird up --management-url <your-mgmt-url> --disable-client-routes
 ```
 
+The watchdog cron (every 5 min) also checks for this on its own and self-heals — if `pgrep -x netbird` ever finds more than one process, it runs the same cleanup + restart automatically, so a missed click-race can't quietly leak memory for more than one cron cycle. The web UI's restart/connect actions also hold a lock for the full duration of the teardown+restart (not just the HTTP request), so clicking the button again mid-restart is now rejected as "busy" instead of racing a second daemon into existence.
+
+**Root cause of the above, if you're porting this to a different device/firmware:** some BusyBox builds (confirmed on GL.iNet's GL-MT3000 firmware) don't include the `pkill` applet at all — `pkill -x netbird` then silently does nothing (command-not-found, swallowed by `2>/dev/null`) instead of erroring, so the "killed" daemon keeps running while a brand-new one starts next to it. Every script in this repo now kills the daemon with `killall -q netbird` / `killall -q -9 netbird` instead, since `killall` and `pgrep` are present wherever `pkill` is missing. If you're adapting this repo for another router, run `which pkill pgrep killall` on it first and confirm which applets it actually has before assuming any of these process-management calls do what they say.
+
 ## Contributing
 
 PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).

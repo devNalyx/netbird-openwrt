@@ -28,9 +28,11 @@ update_hosts() {
 }
 
 # Start daemon if not already running; wait up to 15 s for socket.
+# NOTE: no `pkill` applet on this BusyBox — it silently no-ops instead of
+# failing. killall/pgrep are present; use those instead.
 ensure_daemon() {
     [ -S /var/run/netbird.sock ] && return
-    pkill -x netbird 2>/dev/null
+    killall -q netbird 2>/dev/null
     sleep 1
     rm -f /var/run/netbird.sock
     mkdir -p /var/log/netbird /var/lib/netbird
@@ -106,8 +108,8 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
 
         restart)
             (
-                pkill -x netbird 2>/dev/null; sleep 3
-                kill -9 "$(pgrep netbird 2>/dev/null)" 2>/dev/null; sleep 1
+                killall -q netbird 2>/dev/null; sleep 3
+                killall -q -9 netbird 2>/dev/null; sleep 1
                 rm -f /var/run/netbird.sock
                 mkdir -p /var/log/netbird /var/lib/netbird
                 /usr/bin/netbird service run \
